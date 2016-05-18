@@ -13,10 +13,10 @@ shinyUI(fluidPage(
   fluidRow(
     column(4,wellPanel(
       
-      # 'start' is hacked to default to the last six months; this needs to be cleaned up  
+      # 'start' is hacked to default to the last full months; this needs to be cleaned up  
       dateRangeInput('dateRange',
                      label = 'Select date range:',
-                     start = as.Date(format(Sys.Date()-180, "%Y-%m-01")), end = as.Date(format(Sys.Date(), "%Y-%m-01")) - 1
+                     start = as.Date(format(Sys.Date()-45, "%Y-%m-01")), end = as.Date(format(Sys.Date(), "%Y-%m-01")) - 1
       ),
       
       # Brand Selector

@@ -7,7 +7,8 @@ library(zoo) # We're pulling data back in YYYYMM format and want to be able to e
 
 # Authorize the Google Analytics account
 ga_token <- authorize(client.id = "[insert Google Analytics API client ID]", 
-                      client.secret = "[insert Google Analytics API client secret]")
+                      client.secret = "[insert Google Analytics API client secret]",
+                      cache = "token")
 
 #########################
 # Configuration and loading of options
@@ -45,8 +46,8 @@ colnames(segMaster) <- c("group","segName","segDef")
 
 # Set up the data granularity options                   
 granularityMaster <- list("By Day"="ga:date",
-                    "By Week"="ga:week",
-                    "By Month"="ga:yearMonth")
+                          "By Week"="ga:week",
+                          "By Month"="ga:yearMonth")
 
 # Set up the available metrics. With this version of the code, the only metrics that will be reliable
 # are ones that are additive. In other words, ga:users will pull in data...but it will be misleading.
@@ -78,7 +79,7 @@ shinyServer(function(input, output) {
   ######################################################################################
   # Set up Input Selectors
   ######################################################################################
-
+  
   # Set up the list to allow the user to choose which brand/site to use
   output$brandSelector <- renderUI ({
     brands <- names(brandMaster)  # Grab just the brands (not the view IDs)
@@ -158,28 +159,29 @@ shinyServer(function(input, output) {
         # Get the segment details for the x-axis
         c.segmentName.Y <- segmentNames.Y[i]
         c.segmentDefinition.Y <- segmentDefinitions.Y[i]
-   
+        
         # Combine the two segments. This is, basically, the segment to get "1 box" on the heatmap (and the
         # trended detail)
         c.segmentDefinition.XY <- paste(c("sessions::",c.segmentDefinition.X,";",c.segmentDefinition.Y),collapse="")
-
+        
         # Get the users who visit from that segment -- by month
         gaData <- get_ga(profileId = c.viewId, 
-                       start.date = input$dateRange[1], end.date = input$dateRange[2], 
-                       metrics = c.metric, dimensions = c.granularity, sort = NULL, filters = NULL,
-                       segment = c.segmentDefinition.XY, samplingLevel = "HIGHER_PRECISION", start.index = NULL,
-                       max.results = NULL, include.empty.rows = NULL, fetch.by = NULL, ga_token)
+                         start.date = input$dateRange[1], end.date = input$dateRange[2], 
+                         metrics = c.metric, dimensions = c.granularity, sort = NULL, filters = NULL,
+                         segment = c.segmentDefinition.XY, samplingLevel = "HIGHER_PRECISION", start.index = NULL,
+                         max.results = NULL, include.empty.rows = NULL, fetch.by = NULL, ga_token)
         # Combine the data with the meta data about it
         tempData <- data.frame(brand = c.brandName, viewId=c.viewId, 
-                       segment.X=c.segmentName.X, segment.Y=c.segmentName.Y,
-                       date = gaData[,1], metric = gaData[,2])
+                               segment.X=c.segmentName.X, segment.Y=c.segmentName.Y,
+                               date = gaData[,1], metric = gaData[,2])
         # Add the data to the data frame
         allData <- rbind(allData,tempData)
       }
     }
     
-    ###### I still need to figure out how to get YYYYMM dates from GA to work like dates ######
-    #    allData$month <- as.yearmon(allData$month,"%Y%m") # Convert the YYYYMM format to more of a date
+    # Reset the column names just to make sure they're right. The absence of this was causing
+    # the last column to not be named "metric" in some cases, which caused issues later in the code.
+    colnames(allData) <- c("brand",   "viewId", "segment.X", "segment.Y", "date", "metric")
     return(allData)
     
   })
@@ -232,5 +234,5 @@ shinyServer(function(input, output) {
             strip.text.y = element_text(angle=180, hjust=1), 
             axis.text = element_text(face = "plain", size = 11, colour = "gray40"))
   })
-
+  
 })
